@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 
 async function json(url) {
     const response = await fetch(url);
