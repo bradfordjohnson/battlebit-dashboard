@@ -49,4 +49,4 @@ const data = {
     }
 };
 
-data.fetchDataAndUpdate('historicServerData.json', 'https://publicapi.battlebit.cloud/Servers/GetServerList');
+data.fetchDataAndUpdate('data/historicServerData.json', 'https://publicapi.battlebit.cloud/Servers/GetServerList');
