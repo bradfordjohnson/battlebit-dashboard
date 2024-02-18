@@ -33,4 +33,4 @@ def main(file_path, url):
         )
 
 
-main('historicServerData.json', 'https://publicapi.battlebit.cloud/Servers/GetServerList')
+main('data/historicServerData.json', 'https://publicapi.battlebit.cloud/Servers/GetServerList')
