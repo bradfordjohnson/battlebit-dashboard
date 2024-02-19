@@ -4,7 +4,7 @@ theme: dashboard
 toc: false
 ---
 
-# Historical
+# Historical server data
 
 ```js
 async function json(url) {
@@ -44,3 +44,7 @@ let dataSnapshotCount = jsonData.length;
 <span class="big"><img src="https://github.com/bradfordjohnson/battlebit-dashboard/actions/workflows/logServerData.yaml/badge.svg" alt="Description of the image"></span>
 </a>
 </div>
+
+```js
+view(jsonData);
+```

@@ -46,7 +46,7 @@ let queueCount = sumQueuePlayers(jsonData);
 let mapCount = uniqueMapCount(jsonData);
 ```
 
-# BattleBit Remastered servers
+# BattleBit Remastered current status
 
 <div class="grid grid-cols-4">
 <a class="card" style="color: inherit;">
