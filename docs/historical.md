@@ -59,31 +59,37 @@ function sumPlayers(data) {
   
   // Iterate over the array of objects
   data.forEach(obj => {
-    let datetime = obj.date; // Keep date and time as one field
+    let datetime = new Date(obj.date).getTime(); // Convert string datetime to milliseconds since UNIX epoch
     
-    // Calculate sum for each date
-    let sumPlayers = obj.data.reduce((acc, curr) => acc + curr.Players, 0);
-    let sumQueuePlayers = obj.data.reduce((acc, curr) => acc + curr.QueuePlayers, 0);
+    // Initialize sums for this datetime
+    let sumPlayers = 0;
+    let sumQueuePlayers = 0;
     
-    // Calculate count of unique names (total servers)
-    let uniqueNames = new Set();
+    // Iterate over each item in the nested data array
     obj.data.forEach(item => {
-      uniqueNames.add(item.Name);
+      sumPlayers += item.Players;
+      sumQueuePlayers += item.QueuePlayers;
     });
-    let totalServers = uniqueNames.size;
     
-    // Store sums and count for each datetime
-    sums[datetime] = { totalPlayers: sumPlayers, totalQueuePlayers: sumQueuePlayers, totalServers };
+    // Store sums for each datetime
+    sums[datetime] = { sumPlayers, sumQueuePlayers };
   });
   
   // Convert sums object to array of objects with datetime and sums
-  let result = Object.keys(sums).map(datetime => ({ datetime, ...sums[datetime] }));
+  let result = Object.keys(sums).map(datetime => ({
+    datetime: parseInt(datetime), // Convert back to integer
+    sumPlayers: sums[datetime].sumPlayers,
+    sumQueuePlayers: sums[datetime].sumQueuePlayers
+  }));
   
   return result;
 }
 
 
+
+
 let summedData = sumPlayers(jsonData);
+
 
 view(summedData);
 ```
@@ -144,22 +150,22 @@ function regionLinePlot(data) {
     grid: true
     },
     marks: [
-      Plot.line(data, {x: "date", y: "totalPlayers", stroke: "region"})
+      Plot.line(data, {x: "date", y: "totalPlayers", curve: "natural", stroke: "region"})
     ]
   })
 }
 function linePlot(data) {
   return Plot.plot({
-    y: {
-    grid: true
-    },
-    
+    x: { type: "utc", grid: true },
     marks: [
-      Plot.line(data, {x: "datetime", y: "totalPlayers",  curve: "catmull-rom", stroke: "blue"}),
-      Plot.line(data, {x: "datetime", y: "totalQueuePlayers",  curve: "catmull-rom", stroke: "orange"})
+      Plot.line(data, { x: "datetime", y: "sumPlayers", curve: "natural", stroke: "blue" })
     ]
-  })
+  });
 }
+
+
+
+
 
 function boxplot(data) {
     return Plot.plot({
