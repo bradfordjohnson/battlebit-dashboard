@@ -1,6 +1,6 @@
 ---
 theme: dashboard
-toc: true
+toc: false
 ---
 
 ```js
@@ -47,7 +47,6 @@ let mapCount = uniqueMapCount(jsonData);
 ```
 
 # BattleBit current server data
-## f
 
 <div class="grid grid-cols-4">
 <a class="card" style="color: inherit;">
