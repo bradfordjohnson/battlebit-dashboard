@@ -52,22 +52,22 @@ let mapCount = uniqueMapCount(jsonData);
 <a class="card" style="color: inherit;">
     <h2>Players in game</h2>
     <span class="big">${playerCount}</span>
-    <span class="muted">f</span>
+    <span class="muted"></span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Players in queue</h2>
     <span class="big">${queueCount}</span>
-    <span class="muted">f</span>
+    <span class="muted"></span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Community servers</h2>
     <span class="big">${serverCount}</span>
-    <span class="muted">f</span>
+    <span class="muted"></span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Unique maps</h2>
     <span class="big">${mapCount}</span>
-    <span class="muted">f</span>
+    <span class="muted"></span>
   </a>
 </div>
 
@@ -152,7 +152,7 @@ let dataSnapshotCount = historicalData.length;
     <a class="card" style="color: inherit;">
         <h2>Data snapshot count</h2>
         <span class="big">${dataSnapshotCount}</span>
-        <span class="muted">f</span>
+        <span class="muted"></span>
     </a>
     <a class="card" style="color: inherit;">
         <h2>First snapshot at</h2>
