@@ -13,33 +13,39 @@ const jsonData = await json("https://publicapi.battlebit.cloud/Servers/GetServer
 ```
 
 ```js
-function sumPlayers(data) {
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += data[i].Players;
-  }
-  return sum;
-}
+const sumPlayers = data => data.reduce((acc, d) => acc + d.Players, 0);
 
-function sumQueuePlayers(data) {
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += data[i].QueuePlayers;
-  }
-  return sum;
-}
+const sumQueuePlayers = data => data.reduce((acc, d) => acc + d.QueuePlayers, 0);
 
-function uniqueMapCount(data) {
-  const mapSet = new Set();
-  for (let i = 0; i < data.length; i++) {
-    mapSet.add(data[i].Map);
-  }
-  return mapSet.size;
-}
+const uniqueMapCount = data => new Set(data.map(d => d.Map)).size;
 
 let serverCount = jsonData.length;
 
 let playerCount = sumPlayers(jsonData);
+
+const historicalData = await json("https://raw.githubusercontent.com/bradfordjohnson/battlebit-dashboard/main/data/historicServerData.json");
+
+const latestHistoricalObservation = historicalData.slice(-1)[0];
+
+const latestHistoricalPlayers = latestHistoricalObservation.data.reduce((acc, d) => acc + d.Players, 0);
+
+const latestHistoricalQueuePlayers = latestHistoricalObservation.data.reduce((acc, d) => acc + d.QueuePlayers, 0);
+
+const formatDifference = (a, b) => {
+  const diff = a - b;
+
+  if(diff >= 0){
+    return `+${diff}`;
+  } else {
+    return diff
+  }
+}
+
+const differerenceInPlayers = formatDifference(playerCount,latestHistoricalPlayers);
+
+const differerenceInQueuePlayers = formatDifference(sumQueuePlayers(jsonData),latestHistoricalQueuePlayers);
+
+const differerenceInServers = formatDifference(serverCount,latestHistoricalObservation.data.length);
 
 let queueCount = sumQueuePlayers(jsonData);
 
@@ -52,17 +58,17 @@ let mapCount = uniqueMapCount(jsonData);
 <a class="card" style="color: inherit;">
     <h2>Players in game</h2>
     <span class="big">${playerCount}</span>
-    <span class="muted"></span>
+    <span class="muted">${differerenceInPlayers}</span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Players in queue</h2>
     <span class="big">${queueCount}</span>
-    <span class="muted"></span>
+    <span class="muted">${differerenceInQueuePlayers}</span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Community servers</h2>
     <span class="big">${serverCount}</span>
-    <span class="muted"></span>
+    <span class="muted">${differerenceInServers}</span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Unique maps</h2>
@@ -72,7 +78,8 @@ let mapCount = uniqueMapCount(jsonData);
 </div>
 
 ```js
-function regionBar(data) {
+
+const regionBar = data => {
   const regionMap = new Map();
   for (let i = 0; i < data.length; i++) {
     const region = data[i].Region;
@@ -84,20 +91,6 @@ function regionBar(data) {
   }
   const chartData = Array.from(regionMap, ([region, players]) => ({Region: region, Players: players}));
   return Plot.barY(chartData, {x: "Region", y: "Players", sort: {x: "-y"}}).plot()
-}
-
-function gamemodeBar(data) {
-  const gamemodeMap = new Map();
-  for (let i = 0; i < data.length; i++) {
-    const gamemode = data[i].Gamemode;
-    if (gamemodeMap.has(gamemode)) {
-      gamemodeMap.set(gamemode, gamemodeMap.get(gamemode) + data[i].Players);
-    } else {
-      gamemodeMap.set(gamemode, data[i].Players);
-    }
-  }
-  const chartData = Array.from(gamemodeMap, ([gamemode, players]) => ({Gamemode: gamemode, Players: players}));
-  return Plot.barY(chartData, {x: "Gamemode", y: "Players", sort: {x: "-y"}}).plot()
 }
 
 function mapSizeBar(data) {
@@ -132,12 +125,12 @@ function mapSizeBar(data) {
 # Historical server data
 
 ```js
-async function json(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
-  return await response.json();
-}
-const historicalData = await json("https://raw.githubusercontent.com/bradfordjohnson/battlebit-dashboard/main/data/historicServerData.json");
+// async function json(url) {
+//   const response = await fetch(url);
+//   if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
+//   return await response.json();
+// }
+// const historicalData = await json("https://raw.githubusercontent.com/bradfordjohnson/battlebit-dashboard/main/data/historicServerData.json");
 
 const firstDate = historicalData[0].date;
 const lastIndex = historicalData.length - 1;
