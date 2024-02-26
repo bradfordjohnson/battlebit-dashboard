@@ -154,19 +154,10 @@ function mapSizeBar(data) {
 # Historical server data
 
 ```js
-// async function json(url) {
-//   const response = await fetch(url);
-//   if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
-//   return await response.json();
-// }
-// const historicalData = await json("https://raw.githubusercontent.com/bradfordjohnson/battlebit-dashboard/main/data/historicServerData.json");
-
 const firstDate = historicalData[0].date;
 const lastIndex = historicalData.length - 1;
 const lastDate = historicalData[lastIndex].date;
-```
 
-```js
 let dataSnapshotCount = historicalData.length;
 ```
 
@@ -299,7 +290,7 @@ const linePlot = (data) => {
     marks: [
       Plot.ruleY([0]),
       Plot.line(data, { x: "datetime", y: "sumPlayers", curve: "natural", stroke: "blue" }),
-      Plot.crosshair(data, {x: "datetime", y: "sumPlayers", color: "orange"})
+      Plot.crosshair(data, {x: "datetime", y: "sumPlayers", color: "blue"})
     ]
   });
 }
