@@ -56,15 +56,13 @@
 
 import {define} from "./_observablehq/client.js";
 
-define({id: "13de5fae", inputs: ["view"], outputs: ["json","jsonData"], body: async (view) => {
+define({id: "40313a35", outputs: ["json","jsonData"], body: async () => {
 async function json(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
   return await response.json();
 }
 const jsonData = await json("https://publicapi.battlebit.cloud/Servers/GetServerList");
-
-view(jsonData);
 return {json,jsonData};
 }});
 
@@ -404,7 +402,7 @@ boxplot(summedDataByRegion)
 </script>
 <div id="observablehq-center">
 <main id="observablehq-main" class="observablehq">
-<div id="cell-13de5fae" class="observablehq observablehq--block"></div>
+<div id="cell-40313a35" class="observablehq observablehq--block"></div>
 <div id="cell-708df930" class="observablehq observablehq--block"></div>
 <h1 id="battlebit-current-server-data" tabindex="-1"><a class="observablehq-header-anchor" href="#battlebit-current-server-data">BattleBit current server data</a></h1>
 <div class="grid grid-cols-4">
@@ -495,6 +493,6 @@ boxplot(summedDataByRegion)
     </a>
 </div></main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on <a title="2024-02-26T01:16:17">Feb 26, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on <a title="2024-02-26T17:51:43">Feb 26, 2024</a>.</div>
 </footer>
 </div>

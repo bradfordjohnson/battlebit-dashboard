@@ -10,8 +10,6 @@ async function json(url) {
   return await response.json();
 }
 const jsonData = await json("https://publicapi.battlebit.cloud/Servers/GetServerList");
-
-view(jsonData);
 ```
 
 ```js
