@@ -5,11 +5,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight,alt,wide.css">
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/stdlib/inputs.css">
 <link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight,alt,wide.css">
 <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/stdlib/inputs.css">
 <link rel="modulepreload" href="./_observablehq/client.js">
 <link rel="modulepreload" href="./_observablehq/runtime.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
+<link rel="modulepreload" href="./_observablehq/stdlib/inputs.js">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.13/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/binary-search-bounds@2.0.5/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/d3-array@3.2.4/+esm">
@@ -44,6 +47,7 @@
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/d3-zoom@3.0.0/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/d3@7.8.5/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/delaunator@5.0.0/+esm">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/htl@0.3.1/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/internmap@2.0.3/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/interval-tree-1d@1.0.4/+esm">
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/isoformat@0.2.1/+esm">
@@ -52,54 +56,88 @@
 
 import {define} from "./_observablehq/client.js";
 
-define({id: "40313a35", outputs: ["json","jsonData"], body: async () => {
+define({id: "13de5fae", inputs: ["view"], outputs: ["json","jsonData"], body: async (view) => {
 async function json(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
   return await response.json();
 }
 const jsonData = await json("https://publicapi.battlebit.cloud/Servers/GetServerList");
+
+view(jsonData);
 return {json,jsonData};
 }});
 
-define({id: "6bda17a7", inputs: ["jsonData"], outputs: ["sumPlayers","sumQueuePlayers","uniqueMapCount","serverCount","playerCount","queueCount","mapCount"], body: (jsonData) => {
-function sumPlayers(data) {
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += data[i].Players;
-  }
-  return sum;
-}
+define({id: "708df930", inputs: ["jsonData","json"], outputs: ["sumPlayers","sumQueuePlayers","uniqueMapCount","serverCount","playerCount","historicalData","latestHistoricalObservation","latestHistoricalPlayers","latestHistoricalQueuePlayers","formatDifference","diffInPlayers","diffInQueuePlayers","diffInServers","diffInMaps","queueCount","mapCount","selectKeys","keysToSelect","jsonTable"], body: async (jsonData,json) => {
+const sumPlayers = data => data.reduce((acc, d) => acc + d.Players, 0);
 
-function sumQueuePlayers(data) {
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += data[i].QueuePlayers;
-  }
-  return sum;
-}
+const sumQueuePlayers = data => data.reduce((acc, d) => acc + d.QueuePlayers, 0);
 
-function uniqueMapCount(data) {
-  const mapSet = new Set();
-  for (let i = 0; i < data.length; i++) {
-    mapSet.add(data[i].Map);
-  }
-  return mapSet.size;
-}
+const uniqueMapCount = data => new Set(data.map(d => d.Map)).size;
 
 let serverCount = jsonData.length;
 
 let playerCount = sumPlayers(jsonData);
 
+const historicalData = await json("https://raw.githubusercontent.com/bradfordjohnson/battlebit-dashboard/main/data/historicServerData.json");
+
+const latestHistoricalObservation = historicalData.slice(-1)[0];
+
+const latestHistoricalPlayers = latestHistoricalObservation.data.reduce((acc, d) => acc + d.Players, 0);
+
+const latestHistoricalQueuePlayers = latestHistoricalObservation.data.reduce((acc, d) => acc + d.QueuePlayers, 0);
+
+const formatDifference = (a, b) => {
+  const diff = a - b;
+
+  if(diff >= 0){
+    return `+${diff}`;
+  } else {
+    return diff
+  }
+}
+
+const diffInPlayers = formatDifference(playerCount,latestHistoricalPlayers);
+
+const diffInQueuePlayers = formatDifference(sumQueuePlayers(jsonData),latestHistoricalQueuePlayers);
+
+const diffInServers = formatDifference(serverCount,latestHistoricalObservation.data.length);
+
+const diffInMaps = formatDifference(uniqueMapCount(jsonData),uniqueMapCount(latestHistoricalObservation.data));
+
 let queueCount = sumQueuePlayers(jsonData);
 
 let mapCount = uniqueMapCount(jsonData);
-return {sumPlayers,sumQueuePlayers,uniqueMapCount,serverCount,playerCount,queueCount,mapCount};
+
+function selectKeys(originalObject, keysToSelect) {
+    // Check if originalObject is not null, undefined, or an empty object
+    if (!originalObject || typeof originalObject !== 'object' || Object.keys(originalObject).length === 0) {
+        return {};
+    }
+    
+    return Object.fromEntries(
+        Object.entries(originalObject)
+            .filter(([key, value]) => keysToSelect.includes(key))
+    );
+}
+
+const keysToSelect = ['Name', 'Players', 'QueuePlayers', 'Region', 'Map', 'Gamemode'];
+
+// Assuming jsonData is defined elsewhere in your code
+
+const jsonTable = jsonData.map(obj => selectKeys(obj, keysToSelect));
+return {sumPlayers,sumQueuePlayers,uniqueMapCount,serverCount,playerCount,historicalData,latestHistoricalObservation,latestHistoricalPlayers,latestHistoricalQueuePlayers,formatDifference,diffInPlayers,diffInQueuePlayers,diffInServers,diffInMaps,queueCount,mapCount,selectKeys,keysToSelect,jsonTable};
 }});
 
 define({id: "0be59fb4", inline: true, inputs: ["playerCount","display"], body: async (playerCount,display) => {
 display(await(
 playerCount
+))
+}});
+
+define({id: "778c8ed7", inline: true, inputs: ["diffInPlayers","display"], body: async (diffInPlayers,display) => {
+display(await(
+diffInPlayers
 ))
 }});
 
@@ -109,9 +147,21 @@ queueCount
 ))
 }});
 
+define({id: "d3c00353", inline: true, inputs: ["diffInQueuePlayers","display"], body: async (diffInQueuePlayers,display) => {
+display(await(
+diffInQueuePlayers
+))
+}});
+
 define({id: "37681012", inline: true, inputs: ["serverCount","display"], body: async (serverCount,display) => {
 display(await(
 serverCount
+))
+}});
+
+define({id: "a0bc5b02", inline: true, inputs: ["diffInServers","display"], body: async (diffInServers,display) => {
+display(await(
+diffInServers
 ))
 }});
 
@@ -121,8 +171,20 @@ mapCount
 ))
 }});
 
-define({id: "7627cb19", inputs: ["Plot"], outputs: ["regionBar","gamemodeBar","mapSizeBar"], body: (Plot) => {
-function regionBar(data) {
+define({id: "42d9458c", inline: true, inputs: ["diffInMaps","display"], body: async (diffInMaps,display) => {
+display(await(
+diffInMaps
+))
+}});
+
+define({id: "695b9efa", inline: true, inputs: ["Inputs","jsonTable","display"], body: async (Inputs,jsonTable,display) => {
+display(await(
+Inputs.table(jsonTable, {sort: "Players", reverse: true})
+))
+}});
+
+define({id: "638e5c51", inputs: ["Plot"], outputs: ["regionBar","mapSizeBar"], body: (Plot) => {
+const regionBar = data => {
   const regionMap = new Map();
   for (let i = 0; i < data.length; i++) {
     const region = data[i].Region;
@@ -134,20 +196,6 @@ function regionBar(data) {
   }
   const chartData = Array.from(regionMap, ([region, players]) => ({Region: region, Players: players}));
   return Plot.barY(chartData, {x: "Region", y: "Players", sort: {x: "-y"}}).plot()
-}
-
-function gamemodeBar(data) {
-  const gamemodeMap = new Map();
-  for (let i = 0; i < data.length; i++) {
-    const gamemode = data[i].Gamemode;
-    if (gamemodeMap.has(gamemode)) {
-      gamemodeMap.set(gamemode, gamemodeMap.get(gamemode) + data[i].Players);
-    } else {
-      gamemodeMap.set(gamemode, data[i].Players);
-    }
-  }
-  const chartData = Array.from(gamemodeMap, ([gamemode, players]) => ({Gamemode: gamemode, Players: players}));
-  return Plot.barY(chartData, {x: "Gamemode", y: "Players", sort: {x: "-y"}}).plot()
 }
 
 function mapSizeBar(data) {
@@ -163,7 +211,7 @@ function mapSizeBar(data) {
   const chartData = Array.from(mapsizeMap, ([mapsize, players]) => ({MapSize: mapsize, Players: players}));
   return Plot.barY(chartData, {x: "MapSize", y: "Players", sort: {x: "-y"}}).plot()
 }
-return {regionBar,gamemodeBar,mapSizeBar};
+return {regionBar,mapSizeBar};
 }});
 
 define({id: "ce79da50", inline: true, inputs: ["regionBar","jsonData","display"], body: async (regionBar,jsonData,display) => {
@@ -184,23 +232,13 @@ mapSizeBar(jsonData)
 ))
 }});
 
-define({id: "0d251646", outputs: ["json","historicalData","firstDate","lastIndex","lastDate"], body: async () => {
-async function json(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
-  return await response.json();
-}
-const historicalData = await json("https://raw.githubusercontent.com/bradfordjohnson/battlebit-dashboard/main/data/historicServerData.json");
-
+define({id: "d8b86efe", inputs: ["historicalData"], outputs: ["firstDate","lastIndex","lastDate","dataSnapshotCount"], body: (historicalData) => {
 const firstDate = historicalData[0].date;
 const lastIndex = historicalData.length - 1;
 const lastDate = historicalData[lastIndex].date;
-return {json,historicalData,firstDate,lastIndex,lastDate};
-}});
 
-define({id: "92b76c02", inputs: ["historicalData"], outputs: ["dataSnapshotCount"], body: (historicalData) => {
 let dataSnapshotCount = historicalData.length;
-return {dataSnapshotCount};
+return {firstDate,lastIndex,lastDate,dataSnapshotCount};
 }});
 
 define({id: "098596ec", inline: true, inputs: ["dataSnapshotCount","display"], body: async (dataSnapshotCount,display) => {
@@ -305,7 +343,7 @@ let summedDataByRegion = sumPlayersByRegionAndDate(historicalData);
 return {sumPlayersByRegionAndDate,summedDataByRegion};
 }});
 
-define({id: "ba33c317", inputs: ["Plot"], outputs: ["regionLinePlot","linePlot","boxplot"], body: (Plot) => {
+define({id: "d51ded1c", inputs: ["Plot"], outputs: ["regionLinePlot","linePlot","boxplot"], body: (Plot) => {
 function regionLinePlot(data) {
   return Plot.plot({
     color: {legend: true},
@@ -326,7 +364,7 @@ const linePlot = (data) => {
     marks: [
       Plot.ruleY([0]),
       Plot.line(data, { x: "datetime", y: "sumPlayers", curve: "natural", stroke: "blue" }),
-      Plot.crosshair(data, {x: "datetime", y: "sumPlayers", color: "orange"})
+      Plot.crosshair(data, {x: "datetime", y: "sumPlayers", color: "blue"})
     ]
   });
 }
@@ -366,32 +404,38 @@ boxplot(summedDataByRegion)
 </script>
 <div id="observablehq-center">
 <main id="observablehq-main" class="observablehq">
-<div id="cell-40313a35" class="observablehq observablehq--block"></div>
-<div id="cell-6bda17a7" class="observablehq observablehq--block"></div>
+<div id="cell-13de5fae" class="observablehq observablehq--block"></div>
+<div id="cell-708df930" class="observablehq observablehq--block"></div>
 <h1 id="battlebit-current-server-data" tabindex="-1"><a class="observablehq-header-anchor" href="#battlebit-current-server-data">BattleBit current server data</a></h1>
 <div class="grid grid-cols-4">
 <a class="card" style="color: inherit;">
     <h2>Players in game</h2>
     <span class="big"><span id="cell-0be59fb4" class="observablehq--loading"></span></span>
-    <span class="muted"></span>
+    <span class="muted"><span id="cell-778c8ed7" class="observablehq--loading"></span></span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Players in queue</h2>
     <span class="big"><span id="cell-59ccca96" class="observablehq--loading"></span></span>
-    <span class="muted"></span>
+    <span class="muted"><span id="cell-d3c00353" class="observablehq--loading"></span></span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Community servers</h2>
     <span class="big"><span id="cell-37681012" class="observablehq--loading"></span></span>
-    <span class="muted"></span>
+    <span class="muted"><span id="cell-a0bc5b02" class="observablehq--loading"></span></span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Unique maps</h2>
     <span class="big"><span id="cell-c39b0305" class="observablehq--loading"></span></span>
-    <span class="muted"></span>
+    <span class="muted"><span id="cell-42d9458c" class="observablehq--loading"></span></span>
   </a>
 </div>
-<div id="cell-7627cb19" class="observablehq observablehq--block"></div>
+<div class="grid grid-cols-1">
+<a class="card" style="color: inherit;">
+<h2>Current online servers</h2>
+ <span class="big"><span id="cell-695b9efa" class="observablehq--loading"></span></span>
+ </a>
+</div>
+<div id="cell-638e5c51" class="observablehq observablehq--block"></div>
 <div class="grid grid-cols-2">
   <a class="card" style="color: inherit;">
     <h2>Players by region</h2>
@@ -407,8 +451,7 @@ boxplot(summedDataByRegion)
   </a>
 </div>
 <h1 id="historical-server-data" tabindex="-1"><a class="observablehq-header-anchor" href="#historical-server-data">Historical server data</a></h1>
-<div id="cell-0d251646" class="observablehq observablehq--block"></div>
-<div id="cell-92b76c02" class="observablehq observablehq--block"></div>
+<div id="cell-d8b86efe" class="observablehq observablehq--block"></div>
 <div class="grid grid-cols-4">
     <a class="card" style="color: inherit;">
         <h2>Data snapshot count</h2>
@@ -436,7 +479,7 @@ boxplot(summedDataByRegion)
 </div>
 <div id="cell-6c5ac83d" class="observablehq observablehq--block"></div>
 <div id="cell-7104a034" class="observablehq observablehq--block"></div>
-<div id="cell-ba33c317" class="observablehq observablehq--block"></div>
+<div id="cell-d51ded1c" class="observablehq observablehq--block"></div>
 <div class="grid grid-cols-2">
     <a class="card" style="color: inherit;">
         <h2>Players by hour</h2>
@@ -452,6 +495,6 @@ boxplot(summedDataByRegion)
     </a>
 </div></main>
 <footer id="observablehq-footer">
-<div>Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on <a title="2024-02-22T21:44:54">Feb 22, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank">Observable</a> on <a title="2024-02-26T01:16:17">Feb 26, 2024</a>.</div>
 </footer>
 </div>
