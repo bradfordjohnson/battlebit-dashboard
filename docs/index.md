@@ -10,6 +10,8 @@ async function json(url) {
   return await response.json();
 }
 const jsonData = await json("https://publicapi.battlebit.cloud/Servers/GetServerList");
+
+view(jsonData);
 ```
 
 ```js
@@ -41,15 +43,35 @@ const formatDifference = (a, b) => {
   }
 }
 
-const differerenceInPlayers = formatDifference(playerCount,latestHistoricalPlayers);
+const diffInPlayers = formatDifference(playerCount,latestHistoricalPlayers);
 
-const differerenceInQueuePlayers = formatDifference(sumQueuePlayers(jsonData),latestHistoricalQueuePlayers);
+const diffInQueuePlayers = formatDifference(sumQueuePlayers(jsonData),latestHistoricalQueuePlayers);
 
-const differerenceInServers = formatDifference(serverCount,latestHistoricalObservation.data.length);
+const diffInServers = formatDifference(serverCount,latestHistoricalObservation.data.length);
+
+const diffInMaps = formatDifference(uniqueMapCount(jsonData),uniqueMapCount(latestHistoricalObservation.data));
 
 let queueCount = sumQueuePlayers(jsonData);
 
 let mapCount = uniqueMapCount(jsonData);
+
+function selectKeys(originalObject, keysToSelect) {
+    // Check if originalObject is not null, undefined, or an empty object
+    if (!originalObject || typeof originalObject !== 'object' || Object.keys(originalObject).length === 0) {
+        return {};
+    }
+    
+    return Object.fromEntries(
+        Object.entries(originalObject)
+            .filter(([key, value]) => keysToSelect.includes(key))
+    );
+}
+
+const keysToSelect = ['Name', 'Players', 'QueuePlayers', 'Region', 'Map', 'Gamemode'];
+
+// Assuming jsonData is defined elsewhere in your code
+
+const jsonTable = jsonData.map(obj => selectKeys(obj, keysToSelect));
 ```
 
 # BattleBit current server data
@@ -58,23 +80,30 @@ let mapCount = uniqueMapCount(jsonData);
 <a class="card" style="color: inherit;">
     <h2>Players in game</h2>
     <span class="big">${playerCount}</span>
-    <span class="muted">${differerenceInPlayers}</span>
+    <span class="muted">${diffInPlayers}</span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Players in queue</h2>
     <span class="big">${queueCount}</span>
-    <span class="muted">${differerenceInQueuePlayers}</span>
+    <span class="muted">${diffInQueuePlayers}</span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Community servers</h2>
     <span class="big">${serverCount}</span>
-    <span class="muted">${differerenceInServers}</span>
+    <span class="muted">${diffInServers}</span>
   </a>
   <a class="card" style="color: inherit;">
     <h2>Unique maps</h2>
     <span class="big">${mapCount}</span>
-    <span class="muted"></span>
+    <span class="muted">${diffInMaps}</span>
   </a>
+</div>
+
+<div class="grid grid-cols-1">
+<a class="card" style="color: inherit;">
+<h2>Current online servers</h2>
+ <span class="big">${Inputs.table(jsonTable, {sort: "Players", reverse: true})}</span>
+ </a>
 </div>
 
 ```js
